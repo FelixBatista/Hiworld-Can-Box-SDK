@@ -1,0 +1,122 @@
+[
+  {
+    "id_value": 186,
+    "name": "睿智诚",
+    "canbox": "RZC",
+    "brand": "RZC(Raise)",
+    "carset": "Peugeot/Citroen",
+    "cartype": "508",
+    "msg": "",
+    "database": "canbus.db",
+    "protocol_id": 186,
+    "variant": 0
+  },
+  {
+    "id_value": 196947,
+    "name": "睿智城19标志508L",
+    "canbox": "2019",
+    "brand": "RZC(Raise)",
+    "carset": "Peugeot/Citroen",
+    "cartype": "508L",
+    "msg": null,
+    "database": "canbus.db",
+    "protocol_id": 339,
+    "variant": 3
+  },
+  {
+    "id_value": 786684,
+    "name": "威驰(高配)全兼容",
+    "canbox": "VW(AMP.ALL)2015",
+    "brand": "HIWORLD",
+    "carset": "Peugeot/Citroen",
+    "cartype": "508",
+    "msg": "",
+    "database": "canbus.db",
+    "protocol_id": 252,
+    "variant": 12
+  },
+  {
+    "id_value": 2949372,
+    "name": "威驰 标致系列全兼容 10-18款508低配",
+    "canbox": "2010-2018.Low",
+    "brand": "HIWORLD",
+    "carset": "Peugeot/Citroen",
+    "cartype": "508",
+    "msg": "",
+    "database": "canbus.db",
+    "protocol_id": 252,
+    "variant": 45
+  },
+  {
+    "id_value": 3014908,
+    "name": "威驰 标致系列全兼容 10-18款508高配",
+    "canbox": "2010-2018.High",
+    "brand": "HIWORLD",
+    "carset": "Peugeot/Citroen",
+    "cartype": "508",
+    "msg": "",
+    "database": "canbus.db",
+    "protocol_id": 252,
+    "variant": 46
+  },
+  {
+    "id_value": 3080444,
+    "name": "威驰 标致系列全兼容 19-24款508",
+    "canbox": "2019-2024",
+    "brand": "HIWORLD",
+    "carset": "Peugeot/Citroen",
+    "cartype": "508",
+    "msg": "",
+    "database": "canbus.db",
+    "protocol_id": 252,
+    "variant": 47
+  },
+  {
+    "id_value": 3211603,
+    "name": "睿智城标志10款508",
+    "canbox": "2010",
+    "brand": "RZC(Raise)",
+    "carset": "Peugeot/Citroen",
+    "cartype": "508",
+    "msg": "",
+    "database": "canbus.db",
+    "protocol_id": 339,
+    "variant": 49
+  },
+  {
+    "id_value": 186,
+    "name": "睿智诚",
+    "canbox": "RZC",
+    "brand": "RZC",
+    "carset": "Peugeot/Citroen",
+    "cartype": "508",
+    "msg": "",
+    "database": "canbus_hsp.db",
+    "protocol_id": 186,
+    "variant": 0
+  },
+  {
+    "id_value": 196947,
+    "name": "睿智城19标志508",
+    "canbox": "2019",
+    "brand": "RZC",
+    "carset": "Peugeot/Citroen",
+    "cartype": "508",
+    "msg": "",
+    "database": "canbus_hsp.db",
+    "protocol_id": 339,
+    "variant": 3
+  },
+  {
+    "id_value": 786684,
+    "name": "威驰(高配)全兼容",
+    "canbox": "VW(AMP.ALL)2015",
+    "brand": "HIWORLD",
+    "carset": "Peugeot/Citroen",
+    "cartype": "508",
+    "msg": "",
+    "database": "canbus_hsp.db",
+    "protocol_id": 252,
+    "variant": 12
+  }
+]
