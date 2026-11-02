@@ -4,6 +4,8 @@ Atualização02/11: captura urbana analisada em [DRIVE-20261102.md](DRIVE-202611
 
 ## Decisão
 
+Retorno do proprietário em02/11: velocidade lembrada de aproximadamente50–80km/h, compatível com raw/10=54,1–76,0km/h. Escala provável, ainda não validada por referência simultânea. Sem informação adicional sobre paradas. API permanece inalterada.
+
 SDK incorporável: core Java puro + transporte Android + Probe separado. Um serviço central instalado na central fica adiado até haver necessidade demonstrada de compartilhar conexão entre vários apps. Nada de MQTT/servidor/rede obrigatório. Launcher é apenas consumidor possível e está fora do escopo atual.
 
 ## Sinais

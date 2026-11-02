@@ -1,6 +1,7 @@
 # Changelog
 
 ## Pesquisa — 2026-11-02
+- Relato aproximado do proprietário (50–80km/h) compatível com hipótese velocidade raw/10; ainda sem calibração sincronizada ou alteração da API.
 - Replay de sessão JSONL usando parserJava de produção, com teste de fragmentação/separação de sessões.
 - Análise de captura urbana e candidato à velocidade0x1A/bytes7–8, ainda sem unidade validada.
 - API e Probe permanecem inalterados.
