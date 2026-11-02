@@ -44,7 +44,7 @@ public final class VehicleDecoder {
                 if(t==null)continue;
                 add(out,"rpm",t.rpm,t.rpm,"rpm","box:1a:13-14","Owner verified; only observed profiles",timeMs,OWNER_CONFIRMED);
                 add(out,"steering_raw",t.steeringRaw,t.steeringRaw,"raw","box:1a:10-11","Movement verified; degrees/sign convention uncalibrated",timeMs,OWNER_CONFIRMED);
-                add(out,"speed_kmh_estimated",t.speedKmhEstimated,t.speedRaw,"km/h","box:1a:7-8","raw/10 hypothesis; owner approximate 50â€“80 agrees with54.1â€“76.0, not synchronized calibration",timeMs,ESTIMATED);
+                add(out,"speed_kmh_estimated",t.speedKmhEstimated,t.speedRaw,"km/h","box:1a:7-8","raw/10 hypothesis; owner approximate 50–80 agrees with54.1–76.0, not synchronized calibration",timeMs,ESTIMATED);
                 // Preserve unassigned payload bytes without inventing their meaning.
                 for(int i:new int[]{4,5,6,9,12,15})add(out,"box1a_byte"+i,packet[i]&255,packet[i]&255,"raw","box:1a:"+i,"Unmapped byte",timeMs,RAW_UNKNOWN);
             }
