@@ -118,7 +118,7 @@ public final class SyuCanClient implements AutoCloseable {
                     for (int code=0;code<97;code++) subscribe(7,code);
                     for (int code : new int[]{1001,1002,1003,1007,1031,1032,1053}) subscribe(7,code);
                     try {
-                        if(openModule(service,0)) {subscribe(0,4);subscribe(0,60);}
+                        if(openModule(service,0)) {subscribe(0,4);subscribe(0,60);subscribe(0,101);}
                     }catch(RemoteException e){status("Módulo Main indisponível: "+e);}
                     try {
                         if(openModule(service,10)) subscribe(10,6);

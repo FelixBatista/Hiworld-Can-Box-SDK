@@ -1,4 +1,6 @@
-# Estado e continuidade — 31/10/2026
+# Estado e continuidade — atualizado02/11/2026
+
+**Estado atual0.5:** VehicleDecoder expõe velocidadeESTIMATED(raw/10), HVAC/portas/consumo e camposrawdesconhecidos. VehicleSignal carrega unidade/origem/timestamp/confiança. Decoder experimental separado inclui51camposCANfísicoAEE2010/0x128, incluindo faróis; não conectado aoTeyes. Ver SIGNAL-CATALOG.md e ONLINE-SOURCES.md. A antiga decisão de manter velocidade fora daAPI foi substituída pelo pedido explícito do proprietário de incluir hipóteses anotadas. Parágrafos anteriores preservados abaixo como histórico.
 
 Atualização02/11: captura urbana analisada em [DRIVE-20261102.md](DRIVE-20261102.md). RPM1216–1704, direção raw−18..16. Novo candidato à velocidade: tipo0x1A bytes7/8BE, raw541–760, zero nos ensaios anteriores. Sem escala validada; ainda fora da API de velocidade. Replay agora usa diretamente o parserJava. Nove falhas de checksum observadas, não confundidas com perda de fila do app.
 
