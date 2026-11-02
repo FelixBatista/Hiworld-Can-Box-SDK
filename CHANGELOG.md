@@ -1,5 +1,10 @@
 # Changelog
 
+## Pesquisa — 2026-11-02
+- Replay de sessão JSONL usando parserJava de produção, com teste de fragmentação/separação de sessões.
+- Análise de captura urbana e candidato à velocidade0x1A/bytes7–8, ainda sem unidade validada.
+- API e Probe permanecem inalterados.
+
 ## 0.4.0 — core / baseline do repositório
 - Separação core, transporte Android e Probe0.3 existente.
 - Parser incremental de frames5AA5/AA55 com comprimento/checksum e descarte de ruído.

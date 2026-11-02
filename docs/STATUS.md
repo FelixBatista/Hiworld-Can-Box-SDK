@@ -1,5 +1,7 @@
 # Estado e continuidade — 31/10/2026
 
+Atualização02/11: captura urbana analisada em [DRIVE-20261102.md](DRIVE-20261102.md). RPM1216–1704, direção raw−18..16. Novo candidato à velocidade: tipo0x1A bytes7/8BE, raw541–760, zero nos ensaios anteriores. Sem escala validada; ainda fora da API de velocidade. Replay agora usa diretamente o parserJava. Nove falhas de checksum observadas, não confundidas com perda de fila do app.
+
 ## Decisão
 
 SDK incorporável: core Java puro + transporte Android + Probe separado. Um serviço central instalado na central fica adiado até haver necessidade demonstrada de compartilhar conexão entre vários apps. Nada de MQTT/servidor/rede obrigatório. Launcher é apenas consumidor possível e está fora do escopo atual.

@@ -10,4 +10,4 @@ with zipfile.ZipFile(root/'dist'/'teyes-can-core-0.4.0.jar','w',zipfile.ZIP_DEFL
  for p in (build/'com').rglob('*.class'):archive.write(p,p.relative_to(build).as_posix())
 subprocess.run(['javac','--release','8','-encoding','UTF-8','-cp',str(build),'-d',str(build),*[str(p) for p in (root/'tests').glob('*.java')]],check=True)
 for test in ['DecoderTest','StreamTest']:subprocess.run(['java','-cp',str(build),test],check=True)
-subprocess.run([sys.executable,'-m','unittest','-v','test_capture.py'],cwd=root/'tools',check=True)
+subprocess.run([sys.executable,'-m','unittest','-v','test_capture.py','test_drive.py'],cwd=root/'tools',check=True)
