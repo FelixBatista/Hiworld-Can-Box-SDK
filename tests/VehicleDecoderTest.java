@@ -27,6 +27,15 @@ public class VehicleDecoderTest {
         check(PsaPhysicalCanExperimental.decode("AEE2004",0x128,can,20).isEmpty());
         check(PsaPhysicalCanExperimental.decode("AEE2010",0x1a,can,20).isEmpty());
         check(PsaPhysicalCanExperimental.decode("AEE2010",0x128,new byte[7],20).isEmpty());
+        check(PsaPhysicalCanExperimental.catalog().size()==51);
+        Set<String> catalogNames=new HashSet<>();
+        for(SignalDefinition definition:VehicleDecoder.catalog()) {
+            check(catalogNames.add(definition.name));check(definition.observableByBinderProbe);
+        }
+        for(SignalDefinition definition:PsaPhysicalCanExperimental.catalog()) {
+            check(catalogNames.add(definition.name));check(!definition.observableByBinderProbe);
+        }
+        check(catalogNames.contains("rpm"));check(catalogNames.contains("psa_field_N"));check(catalogNames.contains("high_beam"));
         d.reset();check(d.acceptBinder(7,11,new int[]{1},21).isEmpty());
         System.out.println("Vehicle decoder and isolated physical-CAN tests passed ("+physical.size()+" experimental fields)");
     }

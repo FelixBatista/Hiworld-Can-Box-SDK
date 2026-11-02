@@ -12,7 +12,11 @@ import android.widget.CheckBox;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import com.sleeperculture.teyes.PsaPhysicalCanExperimental;
+import com.sleeperculture.teyes.SignalDefinition;
 import com.sleeperculture.teyes.SyuCanClient;
+import com.sleeperculture.teyes.VehicleDecoder;
+import com.sleeperculture.teyes.VehicleSignal;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import java.io.File;
@@ -23,25 +27,38 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Deque;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
-import java.util.concurrent.Executors;
 
 public final class MainActivity extends Activity implements SyuCanClient.Listener {
-    private final com.sleeperculture.teyes.Peugeot508Decoder decoder=new com.sleeperculture.teyes.Peugeot508Decoder();
+    private static final String APP_VERSION="0.5.1";
+    private final VehicleDecoder decoder=new VehicleDecoder();
     private final Handler ui=new Handler(Looper.getMainLooper());
     private final Object lock=new Object();
     private final Deque<String> recent=new ArrayDeque<>();
     private final Map<String,String> latestSignals=new TreeMap<>();
+    private final Map<String,VehicleSignal> decodedSignals=new TreeMap<>();
     private File capture;
     private long bytes, events, omitted, queueDropped;
     private static final long LIMIT=16L*1024*1024;
-    private TextView status, data;
+    private TextView status, data, catalogData;
+    private android.view.View mainScreen, catalogScreen;
+    private boolean catalogVisible;
+    private CheckBox receivedOnly;
+    private String lastStatus="Pronto. Instale na central Teyes que contém com.syu.ms.";
     private SyuCanClient client;
     private Button connect;
     private CheckBox rawEnabled;
     private final Runnable refresh=new Runnable() {
         @Override public void run() {
+            if(catalogVisible) {
+                catalogData.setText(renderCatalog());
+                ui.postDelayed(this,1000);
+                return;
+            }
             StringBuilder text=new StringBuilder();
             synchronized(lock) {
                 text.append("Eventos nesta abertura: ").append(events).append(" | arquivo: ").append(bytes).append(" bytes\n");
@@ -61,7 +78,7 @@ public final class MainActivity extends Activity implements SyuCanClient.Listene
         // The same private file survives process/Activity recreation, including the document picker.
         if(!capture.exists()) {
             try (FileOutputStream out=new FileOutputStream(capture,true)) {
-                JSONObject meta=new JSONObject();meta.put("type","session");meta.put("appVersion","0.3.0");
+                JSONObject meta=new JSONObject();meta.put("type","session");meta.put("appVersion",APP_VERSION);
                 meta.put("timeMs",System.currentTimeMillis());meta.put("synthetic",false);
                 meta.put("manufacturer",android.os.Build.MANUFACTURER);meta.put("model",android.os.Build.MODEL);
                 meta.put("androidSdk",android.os.Build.VERSION.SDK_INT);meta.put("androidBuild",android.os.Build.DISPLAY);
@@ -71,29 +88,44 @@ public final class MainActivity extends Activity implements SyuCanClient.Listene
         bytes=capture.length();
         LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setPadding(20,16,20,12);
         TextView title=new TextView(this);title.setText("Teyes CAN Probe · leitura Binder");title.setTextSize(22);root.addView(title);
-        TextView hint=new TextView(this);hint.setText("508 SW 2014 sem amp: teclas, iluminação e velocidade/RPM candidatos. Payload MCU não contém necessariamente IDs CAN. Leitura só enquanto esta tela estiver aberta.");root.addView(hint);
+        TextView hint=new TextView(this);hint.setText("508 SW 2014 sem amp: leitura passiva. Velocidade CAN continua estimada; farol alto do catálogo externo não está disponível no transporte Binder.");root.addView(hint);
         rawEnabled=new CheckBox(this);rawEnabled.setText("Capturar payloads MCU/CAN box em tempo real");rawEnabled.setChecked(true);root.addView(rawEnabled);
         LinearLayout buttons=new LinearLayout(this);
         connect=new Button(this);connect.setText("Conectar");connect.setOnClickListener(v -> start());buttons.addView(connect);
         Button stop=new Button(this);stop.setText("Parar");stop.setOnClickListener(v -> stop());buttons.addView(stop);
         Button export=new Button(this);export.setText("Exportar JSONL");export.setOnClickListener(v -> export());buttons.addView(export);root.addView(buttons);
-        status=new TextView(this);status.setText("Pronto. Instale na central Teyes que contém com.syu.ms.");root.addView(status);
+        Button catalog=new Button(this);catalog.setText("Abrir catálogo completo");catalog.setOnClickListener(v -> showCatalog());root.addView(catalog);
+        status=new TextView(this);status.setText(lastStatus);root.addView(status);
         ScrollView scroll=new ScrollView(this);data=new TextView(this);data.setTextIsSelectable(true);data.setTextSize(14);scroll.addView(data);root.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
-        setContentView(root);
+        mainScreen=root;
+
+        LinearLayout catalogRoot=new LinearLayout(this);catalogRoot.setOrientation(LinearLayout.VERTICAL);catalogRoot.setPadding(20,16,20,12);
+        TextView catalogTitle=new TextView(this);catalogTitle.setText("Catálogo completo do SDK");catalogTitle.setTextSize(22);catalogRoot.addView(catalogTitle);
+        TextView catalogHint=new TextView(this);catalogHint.setText("Valor zero é mostrado como zero. ‘Não recebido’ é ausência de callback. Sinais de CAN físico estão listados, mas não são lidos por este Probe.");catalogRoot.addView(catalogHint);
+        LinearLayout catalogControls=new LinearLayout(this);
+        Button back=new Button(this);back.setText("Voltar");back.setOnClickListener(v -> showMain());catalogControls.addView(back);
+        receivedOnly=new CheckBox(this);receivedOnly.setText("Só recebidos");receivedOnly.setChecked(false);receivedOnly.setOnCheckedChangeListener((button,checked) -> catalogData.setText(renderCatalog()));catalogControls.addView(receivedOnly);
+        catalogRoot.addView(catalogControls);
+        ScrollView catalogScroll=new ScrollView(this);catalogData=new TextView(this);catalogData.setTextIsSelectable(true);catalogData.setTextSize(14);catalogScroll.addView(catalogData);catalogRoot.addView(catalogScroll,new LinearLayout.LayoutParams(-1,0,1));
+        catalogScreen=catalogRoot;
+        setContentView(mainScreen);
     }
     @Override public void onStart() {super.onStart();ui.post(refresh);}
     private void start() {
         if (client!=null) return;
         try {
-            JSONObject config=new JSONObject();config.put("type","reader_configuration");config.put("appVersion","0.3.0");
+            JSONObject config=new JSONObject();config.put("type","reader_configuration");config.put("appVersion",APP_VERSION);
             config.put("timeMs",System.currentTimeMillis());config.put("captureMcuPayloads",rawEnabled.isChecked());
             config.put("vehicle","Peugeot 508 SW 2014");config.put("amplifier","none_user_reported");write(config.toString());
         }catch(Exception e){status.setText("Falha ao registrar configuração: "+e);return;}
+        decoder.reset();
+        synchronized(lock){decodedSignals.clear();}
         client=new SyuCanClient(this,this,rawEnabled.isChecked());connect.setEnabled(false);rawEnabled.setEnabled(false);client.connect();
     }
     private void stop() {
         if(client!=null) {SyuCanClient c=client;client=null;c.close();queueDropped+=c.droppedEvents();}
-        status.setText("Leitura interrompida. A captura foi preservada.");
+        lastStatus="Leitura interrompida. A captura foi preservada.";
+        status.setText(lastStatus);
         connect.setEnabled(true);rawEnabled.setEnabled(true);
     }
     @Override public void onStop() {stop();ui.removeCallbacks(refresh);super.onStop();}
@@ -101,24 +133,26 @@ public final class MainActivity extends Activity implements SyuCanClient.Listene
         JSONObject obj=new JSONObject();
         try {obj.put("type","status");obj.put("timeMs",System.currentTimeMillis());obj.put("message",message);write(obj.toString());}
         catch(Exception ignored) {}
-        ui.post(() -> status.setText(message));
+        ui.post(() -> {lastStatus=message;status.setText(message);});
     }
     @Override public void onEvent(SyuCanClient.Event e) {
         try {
-            if(e.module==7 && e.code==1000 && e.ints!=null && e.ints.length>0) {
-                com.sleeperculture.teyes.Peugeot508Decoder.Profile p=new com.sleeperculture.teyes.Peugeot508Decoder.Profile(e.ints[0]);
-                synchronized(lock){latestSignals.put("profile_name",p.name+" — "+p.warningFor2014());}
-            }
             JSONObject obj=new JSONObject();obj.put("type","update");obj.put("synthetic",false);obj.put("module",e.module);
             obj.put("timeMs",e.timeMs);obj.put("elapsedNs",e.elapsedNs);obj.put("code",e.code);
             obj.put("profile",e.profile==null ? JSONObject.NULL : e.profile);
             obj.put("ints",e.ints==null ? JSONObject.NULL : new JSONArray(e.ints));
             obj.put("floats",e.floats==null ? JSONObject.NULL : new JSONArray(e.floats));
             obj.put("strings",e.strings==null ? JSONObject.NULL : new JSONArray(e.strings));
-            com.sleeperculture.teyes.Peugeot508Decoder.Signal decoded=decoder.accept(e.module,e.code,e.ints);
-            if(decoded!=null) {
-                JSONObject semantic=new JSONObject();semantic.put("name",decoded.name);semantic.put("value",decoded.value==null?JSONObject.NULL:decoded.value);
-                semantic.put("unit",decoded.unit);semantic.put("quality",decoded.quality);obj.put("decoded",semantic);
+            List<VehicleSignal> decoded=decoder.acceptBinder(e.module,e.code,e.ints,e.timeMs);
+            if(!decoded.isEmpty()) {
+                JSONArray semanticList=new JSONArray();
+                for(VehicleSignal signal:decoded) {
+                    JSONObject semantic=new JSONObject();semantic.put("name",signal.name);semantic.put("value",signal.value==null?JSONObject.NULL:signal.value);
+                    semantic.put("raw",signal.raw);semantic.put("unit",signal.unit);semantic.put("source",signal.source);
+                    semantic.put("confidence",signal.confidence.name());semantic.put("note",signal.note);semantic.put("receivedAtMs",signal.receivedAtMs);
+                    semanticList.put(semantic);
+                }
+                obj.put("decodedSignals",semanticList);
             }
             if(e.module==7 && e.code==1019 && e.ints!=null) {
                 int[] unsigned=new int[e.ints.length];for(int i=0;i<unsigned.length;i++)unsigned[i]=e.ints[i]&255;
@@ -128,6 +162,7 @@ public final class MainActivity extends Activity implements SyuCanClient.Listene
             write(obj.toString());
             synchronized(lock) {
                 events++;
+                for(VehicleSignal signal:decoded)decodedSignals.put(signal.name,signal);
                 String signal="["+e.module+":"+e.code+"] "+label(e.module,e.code)+" ints="+Arrays.toString(e.ints);
                 if((e.module==0 && (e.code==4||e.code==60))||(e.module==10 && e.code==6)||
                    (e.module==7 && (e.code==1000||e.code==1031||e.code==1032||e.code==1053))) latestSignals.put(e.module+":"+e.code,signal);
@@ -135,6 +170,61 @@ public final class MainActivity extends Activity implements SyuCanClient.Listene
                 while(recent.size()>60) recent.removeLast();
             }
         } catch(Exception ex) {ui.post(() -> status.setText("capture_error: "+ex));}
+    }
+
+    private void showCatalog() {
+        catalogVisible=true;
+        catalogData.setText(renderCatalog());
+        setContentView(catalogScreen);
+    }
+    private void showMain() {
+        catalogVisible=false;
+        setContentView(mainScreen);
+    }
+    @Override public void onBackPressed() {
+        if(catalogVisible)showMain();else super.onBackPressed();
+    }
+    private String renderCatalog() {
+        Map<String,VehicleSignal> values;
+        synchronized(lock){values=new TreeMap<>(decodedSignals);}
+        boolean only=receivedOnly!=null&&receivedOnly.isChecked();
+        StringBuilder out=new StringBuilder();
+        out.append(client==null?"DESCONECTADO — valores abaixo são históricos\n":"CONECTADO — atualização ao vivo\n");
+        out.append(lastStatus).append("\n");
+        out.append("Recebidos: ").append(values.size()).append(" sinais decodificados\n\n");
+        List<SignalDefinition> definitions=new java.util.ArrayList<>();
+        definitions.addAll(VehicleDecoder.catalog());definitions.addAll(PsaPhysicalCanExperimental.catalog());
+        Set<String> defined=new HashSet<>();String category="";long now=System.currentTimeMillis();
+        for(SignalDefinition definition:definitions) {
+            defined.add(definition.name);VehicleSignal value=values.get(definition.name);
+            if(only&&value==null)continue;
+            if(!category.equals(definition.category)) {category=definition.category;out.append("\n== ").append(category.toUpperCase()).append(" ==\n");}
+            appendCatalogRow(out,definition,value,now);
+        }
+        for(VehicleSignal value:values.values())if(!defined.contains(value.name)) {
+            if(!category.equals("Campos brutos recebidos")){category="Campos brutos recebidos";out.append("\n== CAMPOS BRUTOS RECEBIDOS ==\n");}
+            SignalDefinition definition=new SignalDefinition(category,value.name,value.unit,value.source,value.note,"perfil ativo",value.confidence,true);
+            appendCatalogRow(out,definition,value,now);
+        }
+        return out.toString();
+    }
+    private static void appendCatalogRow(StringBuilder out,SignalDefinition definition,VehicleSignal value,long now) {
+        out.append(value==null?"○ ":value.available()?"● ":"△ ").append(definition.name).append(" = ");
+        if(value==null)out.append(definition.observableByBinderProbe?"não recebido":"indisponível neste Probe Binder");
+        else if(value.value==null)out.append("indisponível (raw ").append(value.raw).append(')');
+        else out.append(value.value).append(value.unit.isEmpty()?"":" "+value.unit).append(" (raw ").append(value.raw).append(')');
+        out.append("\n  ").append(confidenceLabel(definition.confidence)).append(" | ").append(definition.source).append(" | ").append(definition.scope);
+        if(value!=null)out.append(" | recebido há ").append(Math.max(0,now-value.receivedAtMs)).append(" ms");
+        out.append("\n  ").append(definition.note).append("\n");
+    }
+    private static String confidenceLabel(VehicleSignal.Confidence confidence) {
+        switch(confidence) {
+            case OWNER_CONFIRMED:return "CONFIRMADO PELO PROPRIETÁRIO";
+            case OEM_STATIC:return "CÓDIGO OEM";
+            case ESTIMATED:return "ESTIMATIVA";
+            case EXTERNAL_UNVERIFIED:return "FONTE EXTERNA NÃO VALIDADA";
+            default:return "BRUTO DESCONHECIDO";
+        }
     }
     private void write(String line) throws Exception {
         byte[] buffer=(line+"\n").getBytes(StandardCharsets.UTF_8);

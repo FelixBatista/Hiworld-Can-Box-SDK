@@ -2,7 +2,7 @@
 
 Biblioteca para criar aplicativos que leem dados do carro através dos serviços Teyes/SYU. Projeto principal: **SDK e decodificação**, não launcher. Veículo de referência: Peugeot508SW2014, sem amplificador; firmware MS25.1202/2125120210.
 
-## API ampliada 0.5
+## API ampliada 0.5.1
 
 Use `VehicleDecoder`: ele expõe candidatos com `confidence`, `source`, `unit`, `receivedAtMs` e `note`. Consulte o [catálogo completo](docs/SIGNAL-CATALOG.md) e as [fontes online](docs/ONLINE-SOURCES.md). `speed_kmh_estimated` usa raw/10 como hipótese: **não é velocidade calibrada**. Farol alto/baixo estão no decoder separado de CAN físico experimental, ainda inacessíveis pela conexão Teyes.
 
@@ -16,13 +16,13 @@ for (VehicleSignal s : decoder.acceptBinder(e.module, e.code, e.ints, e.timeMs))
 // Recrie ou reset o decoder ao reconectar.
 ```
 
-Core0.5 reúne parser e decodificação nesta API, mantendo transporte separado. Probe0.3 ainda não foi atualizado. Os exemplos de baixo nível abaixo continuam disponíveis.
+Core0.5.1 reúne parser, catálogo e decodificação nesta API, mantendo transporte separado. Probe0.5.1 usa o mesmo `VehicleDecoder` e oferece uma tela de catálogo ao vivo. Os exemplos de baixo nível abaixo continuam disponíveis.
 
 ## Estrutura e decisão
 
 - `core/`: Java8 sem Android, enquadramento5AA5/AA55, checksum e decodificadores. Pode ser testado no laptop.
 - `android/`: transporte Binder `SyuCanClient`, para reutilização em apps Android ou módulo Android de um app Flutter.
-- `probe/`: app diagnóstico0.3 preservado, usado para captura/exportação. Não incorpora automaticamente o novo parser0.4.
+- `probe/`: app diagnóstico0.5.1, usado para captura/exportação e inspeção do catálogo completo durante a leitura.
 - `tools/`: análise de JSONL e testes; `tests/`: regressões dos decodificadores.
 - `docs/`: evidências, decisão arquitetural, estado e próximos passos.
 
@@ -63,6 +63,6 @@ JDK9+ (gera bytecodeJava8) ePython3, sem pacotesPython extras:
 python tools/check.py
 ```
 
-Gera `dist/teyes-can-core-0.5.0.jar`. Testa separação de callbacks, perfis, temperaturas, fragmentação em todos os pontos, concatenação, checksum inválido, sentinela inicial e direção negativa. O pacote completo do Probe pode ser reconstruído no Linux comJDK21,ANDROID_SDK_ROOT contendo platform35/build-tools35.0.0: `bash build-android.sh`. Esse script continua produzindo Probe0.3; chaves ficam fora do repo em HOME/.local/share/teyes-probe-signing. Use a mesma chave anterior para preservar upgrades de instalações existentes.
+Gera `dist/teyes-can-core-0.5.1.jar`. Testa separação de callbacks, perfis, temperaturas, fragmentação em todos os pontos, concatenação, checksum inválido, sentinela inicial, direção negativa e completude básica do catálogo. O pacote completo do Probe pode ser reconstruído no Linux comJDK21,ANDROID_SDK_ROOT contendo platform35/build-tools35.0.0: `bash build-android.sh`. O script produz Probe0.5.1; chaves ficam fora do repo em HOME/.local/share/teyes-probe-signing. Use a mesma chave anterior para preservar upgrades de instalações existentes.
 
 Capturas completas, APKs OEM, firmware, fontes decompiladas e credenciais não pertencem aoGit. Só um pacote mínimo observado, sem identificação pessoal, integra o teste. Relatórios históricos preservam hipóteses da época; **docs/STATUS.md é o estado atual**, incluindo validação posterior do usuário. Repo privado; nenhuma licença de redistribuição do material OEM é concedida.

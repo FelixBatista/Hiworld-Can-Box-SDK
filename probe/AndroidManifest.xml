@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.sleeperculture.teyesprobe" android:versionCode="3" android:versionName="0.3.0">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.sleeperculture.teyesprobe" android:versionCode="4" android:versionName="0.5.1">
     <uses-sdk android:minSdkVersion="23" android:targetSdkVersion="28"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28"/>
     <queries><package android:name="com.syu.ms"/></queries>

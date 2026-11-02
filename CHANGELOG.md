@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.1 — catálogo ao vivo no Probe
+- Probe integrado a `VehicleDecoder`: a captura passa a registrar a lista `decodedSignals` com valor, raw, unidade, fonte, confiança, nota e horário.
+- Nova tela de catálogo completo, atualizada durante a leitura, distinguindo zero, indisponível recebido, nunca recebido e valor histórico após desconexão.
+- Catálogo estático reutilizável em `VehicleDecoder.catalog()` e `PsaPhysicalCanExperimental.catalog()`; os 51 sinais de CAN físico aparecem como indisponíveis no Probe Binder, sem fingir telemetria.
+- Filtro opcional para mostrar somente sinais recebidos. Probe 0.5.1 mantém leitura passiva e exportação JSONL.
+
 ## 0.5.0 — API ampliada experimental
 - VehicleDecoder/VehicleSignal: interpretação com origem, timestamp, unidade, confiança e disponibilidade.
 - Velocidade raw/10 exposta explicitamente como estimativa; GPSMain101 separado e assinado pelo transporteAndroid.

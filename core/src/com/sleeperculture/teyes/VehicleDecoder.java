@@ -11,12 +11,49 @@ public final class VehicleDecoder {
     private final Map<Integer,Long> timestamps=new HashMap<>();
     private final CanboxStream stream=new CanboxStream();
     private static final Map<Integer,String> FIELDS=new LinkedHashMap<>();
+    private static final List<SignalDefinition> CATALOG=new ArrayList<>();
     static {
         int[] codes={0,1,2,3,4,5,10,11,12,13,16,18,19,20,21,22,23,24,51,53,54,55,65,99,101,102,104,105,106,107,172,192,197,242};
         String[] names={"hood","front_left_door","front_right_door","rear_left_door","rear_right_door","trunk","hvac_power","hvac_ac","hvac_recirculation","hvac_auto","rear_defrost","left_air_distribution18","left_air_distribution19","left_air_distribution20","left_fan_raw","right_air_distribution22","right_air_distribution23","right_air_distribution24","hvac_mode_raw","hvac_max_ac_candidate","hvac_aqs","hvac_dual","front_defrost","distance_display99_raw","trip1_distance_display_raw","trip1_secondary_display_raw","trip2_secondary_display_raw","trip2_secondary2_display_raw","trip2_distance_display_raw","psa107_unknown","consumption_unit_code","psa192_unknown","panel_brightness_candidate","temperature_offset"};
         for(int i=0;i<codes.length;i++)FIELDS.put(codes[i],names[i]);
+
+        define("Conexão","profile","","binder:7:1000","Seleção OEM; não identifica fisicamente a caixa CAN","todos os perfis",OEM_STATIC,true);
+        define("Veículo","rpm","rpm","box:1a:13-14","Valor confirmado pelo proprietário","perfis 3014908 e 3080444",OWNER_CONFIRMED,true);
+        define("Veículo","steering_raw","raw","box:1a:10-11","Movimento confirmado; graus e sentido ainda não calibrados","perfis 3014908 e 3080444",OWNER_CONFIRMED,true);
+        define("Veículo","speed_kmh_estimated","km/h","box:1a:7-8","Hipótese raw/10; sem calibração sincronizada","perfis 3014908 e 3080444",ESTIMATED,true);
+        define("Veículo","gps_speed_kmh","km/h","binder:0:101","GPS separado da velocidade CAN; callback não informa validade do fix","todos os perfis",OEM_STATIC,true);
+        define("Iluminação","illumination","raw","binder:0:4","Estado geral; não distingue farol alto, baixo ou DRL","todos os perfis",OEM_STATIC,true);
+        define("Entradas","key_candidate_0_60","raw","binder:0:60","Pode depender do modo de aprendizagem; tecla não validada","todos os perfis",ESTIMATED,true);
+        define("Entradas","key_candidate_10_6","raw","binder:10:6","Pode depender do modo de aprendizagem; tecla não validada","todos os perfis",ESTIMATED,true);
+        define("Entradas","key_candidate_7_1053","raw","binder:7:1053","Pode depender do modo de aprendizagem; tecla não validada","todos os perfis",ESTIMATED,true);
+        define("Veículo","oem_speed_callback_candidate","raw","binder:7:1031","Não observado; suporte e escala desconhecidos","todos os perfis",ESTIMATED,true);
+        define("Veículo","oem_rpm_callback_candidate","raw","binder:7:1032","Não observado; suporte e escala desconhecidos","todos os perfis",ESTIMATED,true);
+        for(int i:new int[]{4,5,6,9,12,15})define("Payload 0x1A","box1a_byte"+i,"raw","box:1a:"+i,"Byte preservado sem significado inventado","perfis 3014908 e 3080444",RAW_UNKNOWN,true);
+
+        for(Map.Entry<Integer,String> entry:FIELDS.entrySet()) {
+            String name=entry.getValue();VehicleSignal.Confidence confidence=name.endsWith("candidate")?ESTIMATED:
+                (name.startsWith("psa")||name.startsWith("trip")||name.equals("distance_display99_raw")?RAW_UNKNOWN:OEM_STATIC);
+            define(category(name),name,"raw","binder:7:"+entry.getKey(),"Campo/estado OEM; polaridade ou escala física não presumida","protocolo 252",confidence,true);
+        }
+        define("Climatização","left_temperature_setting","OEM display degrees","binder:7:27 + 242","-1 NO, -2 LOW, -3 HI; não assumir Celsius","protocolo 252",OEM_STATIC,true);
+        define("Climatização","right_temperature_setting","OEM display degrees","binder:7:28 + 242","-1 NO, -2 LOW, -3 HI; não assumir Celsius","protocolo 252",OEM_STATIC,true);
+        define("Consumo","consumption_current","L/100km, km/L ou mpg","binder:7:98 + 172","raw/10; 65535 é indisponível","protocolo 252",OEM_STATIC,true);
+        define("Consumo","consumption_trip1","L/100km, km/L ou mpg","binder:7:100 + 172","raw/10; 65535 é indisponível","protocolo 252",OEM_STATIC,true);
+        define("Consumo","consumption_trip2","L/100km, km/L ou mpg","binder:7:103 + 172","raw/10; 65535 é indisponível","protocolo 252",OEM_STATIC,true);
+        define("Campos brutos","psa_field_N","raw","binder:7:0..257","Modelo para qualquer código ainda sem nome; o N real aparece quando recebido","protocolo 252",RAW_UNKNOWN,true);
     }
     public static Map<Integer,String> binderCatalog(){return Collections.unmodifiableMap(FIELDS);}
+    public static List<SignalDefinition> catalog(){return Collections.unmodifiableList(CATALOG);}
+    private static void define(String category,String name,String unit,String source,String note,String scope,VehicleSignal.Confidence confidence,boolean binder) {
+        CATALOG.add(new SignalDefinition(category,name,unit,source,note,scope,confidence,binder));
+    }
+    private static String category(String name) {
+        if(name.startsWith("hvac")||name.contains("defrost")||name.contains("fan")||name.contains("air_distribution")||name.equals("temperature_offset"))return "Climatização";
+        if(name.contains("door")||name.equals("hood")||name.equals("trunk"))return "Aberturas";
+        if(name.contains("consumption"))return "Consumo";
+        if(name.contains("trip")||name.contains("distance"))return "Viagem";
+        return "Campos OEM";
+    }
     public void reset(){profile=null;cache.clear();timestamps.clear();stream.reset();}
     private void add(List<VehicleSignal> out,String name,Object value,int raw,String unit,String source,String note,long time,VehicleSignal.Confidence confidence) {
         out.add(new VehicleSignal(name,value,raw,unit,source,note,profile==null?-1:profile,time,confidence));

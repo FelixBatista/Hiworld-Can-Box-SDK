@@ -7,20 +7,35 @@ import static com.sleeperculture.teyes.VehicleSignal.Confidence.EXTERNAL_UNVERIF
  * Requires caller to explicitly identify AEE2010; not validated on this owner's bus.
  */
 public final class PsaPhysicalCanExperimental {
+    private static final String[][] BIT_NAMES={
+        {"drl","left_indicator","right_indicator","rear_fog","front_fog","high_beam","low_beam","parking_lights"},
+        {"gear_display_blinking",null,null,null,null,null,null,null},
+        {null,null,null,null,null,null,null,"recommended_gear_blinking"},
+        {"parking_brake_inhibited","parking_brake",null,null,"passenger_airbag_active","child_lock","stop_warning","service_warning"},
+        {"suspension_status","esp_active","esp_disabled","cafr_indicator","operation_indicator_blinking","operation_indicator","door_open","diesel_preheat"},
+        {"rear_left_seatbelt_warning",null,null,"passenger_seatbelt_blinking","passenger_seatbelt_warning","driver_seatbelt_blinking","driver_seatbelt_warning","fuel_low"},
+        {"passenger_protection","warning_active","cmb_active","rear_right_seatbelt_blinking","rear_right_seatbelt_warning","rear_center_seatbelt_blinking","rear_center_seatbelt_warning","rear_left_seatbelt_blinking"},
+        {"personalization_change","color_change","ready_lamp","minc_blinking",null,null,null,null}
+    };
+    private static final String[][] MULTIBIT={
+        {"gear_position_code","1:4-7"},{"gear_in_drive_code","1:1-3"},{"gearbox_selection_code","2:0-1"},
+        {"recommended_gear_direction_code","2:2-3"},{"gearbox_mode_code","2:4-6"},{"foot_on_brake_indicator","3:2-3"},
+        {"scr_indicator","5:1-2"},{"foot_on_clutch_indicator","7:4-5"},{"engine_indicator","7:6-7"}
+    };
+    private static final List<SignalDefinition> CATALOG=new ArrayList<>();
+    static {
+        for(int b=0;b<8;b++)for(int bit=0;bit<8;bit++)if(BIT_NAMES[b][bit]!=null)catalog(BIT_NAMES[b][bit],b+":"+bit);
+        for(String[] item:MULTIBIT)catalog(item[0],item[1]);
+    }
+    public static List<SignalDefinition> catalog(){return Collections.unmodifiableList(CATALOG);}
+    private static void catalog(String name,String offset) {
+        CATALOG.add(new SignalDefinition("CAN físico experimental",name,"raw","physical_can:AEE2010:128:"+offset,
+            "Mapeamento público externo; não validado neste carro","AEE2010, arbitration ID 0x128",EXTERNAL_UNVERIFIED,false));
+    }
     public static List<VehicleSignal> decode(String architecture,int arbitrationId,byte[] data,long timeMs) {
         List<VehicleSignal> result=new ArrayList<>();
         if(!"AEE2010".equals(architecture)||arbitrationId!=0x128||data==null||data.length!=8)return result;
-        String[][] bitNames={
-            {"drl","left_indicator","right_indicator","rear_fog","front_fog","high_beam","low_beam","parking_lights"},
-            {"gear_display_blinking",null,null,null,null,null,null,null},
-            {null,null,null,null,null,null,null,"recommended_gear_blinking"},
-            {"parking_brake_inhibited","parking_brake",null,null,"passenger_airbag_active","child_lock","stop_warning","service_warning"},
-            {"suspension_status","esp_active","esp_disabled","cafr_indicator","operation_indicator_blinking","operation_indicator","door_open","diesel_preheat"},
-            {"rear_left_seatbelt_warning",null,null,"passenger_seatbelt_blinking","passenger_seatbelt_warning","driver_seatbelt_blinking","driver_seatbelt_warning","fuel_low"},
-            {"passenger_protection","warning_active","cmb_active","rear_right_seatbelt_blinking","rear_right_seatbelt_warning","rear_center_seatbelt_blinking","rear_center_seatbelt_warning","rear_left_seatbelt_blinking"},
-            {"personalization_change","color_change","ready_lamp","minc_blinking",null,null,null,null}
-        };
-        for(int b=0;b<8;b++)for(int bit=0;bit<8;bit++)if(bitNames[b][bit]!=null)add(result,bitNames[b][bit],(data[b]>>>bit)&1,b+":"+bit,timeMs);
+        for(int b=0;b<8;b++)for(int bit=0;bit<8;bit++)if(BIT_NAMES[b][bit]!=null)add(result,BIT_NAMES[b][bit],(data[b]>>>bit)&1,b+":"+bit,timeMs);
         add(result,"gear_position_code",(data[1]>>>4)&15,"1:4-7",timeMs);
         add(result,"gear_in_drive_code",(data[1]>>>1)&7,"1:1-3",timeMs);
         add(result,"gearbox_selection_code",data[2]&3,"2:0-1",timeMs);

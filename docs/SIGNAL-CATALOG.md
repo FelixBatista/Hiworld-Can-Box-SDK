@@ -4,6 +4,8 @@
 
 VehicleDecoder.acceptBinder(module,code,ints,timeMs) retorna uma lista de VehicleSignal. Instância por conexão; reset ao reconectar. Perfil1000 limpa caches e frames incompletos. Campos não recebidos não aparecem; value=null significa indisponível. Metadata242/172 pode reemitir temperatura/consumo já recebido: mantém timestamp da medida original, não simula dado novo. Cache de metadados vale até reset/troca de perfil. receivedAtMs é horário da recepção, não timestamp físico do sensor; callback inicial pode vir do cache OEM. isStale(now,limit) permite ao app definir expiração.
 
+`VehicleDecoder.catalog()` descreve todos os sinais Binder conhecidos mesmo antes de serem recebidos. `PsaPhysicalCanExperimental.catalog()` descreve separadamente os 51 sinais do CAN físico externo. `SignalDefinition.observableByBinderProbe=false` impede que uma interface apresente esses sinais externos como telemetria disponível no Probe. `psa_field_N` é um modelo para códigos ainda não nomeados; ao receber um código real, o decoder preserva o nome com seu número.
+
 Confidence:
 - OWNER_CONFIRMED: RPM e resposta da direção confirmados pelo usuário; direção continua raw.
 - OEM_STATIC: interpretação reconstruída do código fornecido, sem garantir suporte/calibração no veículo.

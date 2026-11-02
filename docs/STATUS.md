@@ -1,6 +1,6 @@
 # Estado e continuidade — atualizado02/11/2026
 
-**Estado atual0.5:** VehicleDecoder expõe velocidadeESTIMATED(raw/10), HVAC/portas/consumo e camposrawdesconhecidos. VehicleSignal carrega unidade/origem/timestamp/confiança. Decoder experimental separado inclui51camposCANfísicoAEE2010/0x128, incluindo faróis; não conectado aoTeyes. Ver SIGNAL-CATALOG.md e ONLINE-SOURCES.md. A antiga decisão de manter velocidade fora daAPI foi substituída pelo pedido explícito do proprietário de incluir hipóteses anotadas. Parágrafos anteriores preservados abaixo como histórico.
+**Estado atual0.5.1:** VehicleDecoder expõe velocidadeESTIMATED(raw/10), HVAC/portas/consumo e camposrawdesconhecidos. VehicleSignal carrega unidade/origem/timestamp/confiança. Probe0.5.1 integra esse decoder e tem uma tela de catálogo completo atualizada ao vivo. Sinais nunca recebidos, indisponíveis e zeros permanecem distintos. Decoder experimental separado inclui51camposCANfísicoAEE2010/0x128, incluindo faróis; eles aparecem no catálogo como indisponíveis porque não estão conectados ao transporteBinder. Ver SIGNAL-CATALOG.md e ONLINE-SOURCES.md.
 
 Atualização02/11: captura urbana analisada em [DRIVE-20261102.md](DRIVE-20261102.md). RPM1216–1704, direção raw−18..16. Novo candidato à velocidade: tipo0x1A bytes7/8BE, raw541–760, zero nos ensaios anteriores. Sem escala validada; ainda fora da API de velocidade. Replay agora usa diretamente o parserJava. Nove falhas de checksum observadas, não confundidas com perda de fila do app.
 
@@ -30,9 +30,9 @@ Os dois JSONLs originais são cumulativos. Nunca contar o segundo como sessão i
 
 ## Próximos passos ordenados
 
-1. Integrar core0.4 ao Probe, com sessão nova explícita, timestamps e aviso de dados antigos; manter arquivo antigo até exportação.
-2. Adicionar sinais tipados HVAC/portas/trips à API e seus testes baseados nos caminhos OEM já documentados.
-3. Reproduzir localmente capturas com parser de fluxo, preservar amostras desconhecidas e mapear velocidadeCAN/farol alto; não converter ausência para zero.
+1. Validar Probe0.5.1 na central: catálogo, valores ao vivo, atualização após reconexão e exportação; preservar captura anterior.
+2. Coletar referência de velocidade sincronizada com `speed_kmh_estimated` e `gps_speed_kmh`; manter as duas fontes separadas.
+3. Investigar um transporte CAN físico real antes de usar os campos AEE2010, inclusive farol alto; não interpretar1019 como arbitration ID.
 4. Calibrar direção em graus/sentido e registrar box/firmware/perfil por teste.
 5. Empacotar AndroidAAR e exemplo Kotlin/Flutter quando a API estabilizar. Criar releases versionadas, changelog e matriz de compatibilidade.
 
