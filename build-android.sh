@@ -37,7 +37,7 @@ if [[ ! -f "$signing/debug.p12" ]]; then
         -storepass:file "$signing/password" -keypass:file "$signing/password"
 fi
 "$bt/apksigner" sign --ks "$signing/debug.p12" --ks-key-alias probe \
-    --ks-pass "file:$signing/password" --out dist/teyes-can-probe-0.5.1.apk build/aligned.apk
-"$bt/apksigner" verify --verbose --print-certs dist/teyes-can-probe-0.5.1.apk
-"$bt/aapt" dump badging dist/teyes-can-probe-0.5.1.apk
-sha256sum dist/teyes-can-probe-0.5.1.apk > dist/SHA256SUMS
+    --ks-pass "file:$signing/password" --out dist/teyes-can-probe-0.5.2.apk build/aligned.apk
+"$bt/apksigner" verify --verbose --print-certs dist/teyes-can-probe-0.5.2.apk
+"$bt/aapt" dump badging dist/teyes-can-probe-0.5.2.apk
+sha256sum dist/teyes-can-probe-0.5.2.apk > dist/SHA256SUMS

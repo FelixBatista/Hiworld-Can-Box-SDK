@@ -34,7 +34,7 @@ import java.util.Set;
 import java.util.TreeMap;
 
 public final class MainActivity extends Activity implements SyuCanClient.Listener {
-    private static final String APP_VERSION="0.5.1";
+    private static final String APP_VERSION="0.5.2";
     private final VehicleDecoder decoder=new VehicleDecoder();
     private final Handler ui=new Handler(Looper.getMainLooper());
     private final Object lock=new Object();
@@ -45,6 +45,7 @@ public final class MainActivity extends Activity implements SyuCanClient.Listene
     private long bytes, events, omitted, queueDropped;
     private static final long LIMIT=16L*1024*1024;
     private TextView status, data, catalogData;
+    private ScrollView catalogScroll;
     private android.view.View mainScreen, catalogScreen;
     private boolean catalogVisible;
     private CheckBox receivedOnly;
@@ -55,7 +56,7 @@ public final class MainActivity extends Activity implements SyuCanClient.Listene
     private final Runnable refresh=new Runnable() {
         @Override public void run() {
             if(catalogVisible) {
-                catalogData.setText(renderCatalog());
+                refreshCatalogText(true);
                 ui.postDelayed(this,1000);
                 return;
             }
@@ -101,12 +102,13 @@ public final class MainActivity extends Activity implements SyuCanClient.Listene
 
         LinearLayout catalogRoot=new LinearLayout(this);catalogRoot.setOrientation(LinearLayout.VERTICAL);catalogRoot.setPadding(20,16,20,12);
         TextView catalogTitle=new TextView(this);catalogTitle.setText("Catálogo completo do SDK");catalogTitle.setTextSize(22);catalogRoot.addView(catalogTitle);
-        TextView catalogHint=new TextView(this);catalogHint.setText("Valor zero é mostrado como zero. ‘Não recebido’ é ausência de callback. Sinais de CAN físico estão listados, mas não são lidos por este Probe.");catalogRoot.addView(catalogHint);
+        TextView catalogHint=new TextView(this);catalogHint.setText("Lista compacta atualizada ao vivo. Valor zero é mostrado como zero; ‘não recebido’ significa ausência de callback.");catalogRoot.addView(catalogHint);
         LinearLayout catalogControls=new LinearLayout(this);
         Button back=new Button(this);back.setText("Voltar");back.setOnClickListener(v -> showMain());catalogControls.addView(back);
-        receivedOnly=new CheckBox(this);receivedOnly.setText("Só recebidos");receivedOnly.setChecked(false);receivedOnly.setOnCheckedChangeListener((button,checked) -> catalogData.setText(renderCatalog()));catalogControls.addView(receivedOnly);
+        receivedOnly=new CheckBox(this);receivedOnly.setText("Só recebidos");receivedOnly.setChecked(false);receivedOnly.setOnCheckedChangeListener((button,checked) -> refreshCatalogText(false));catalogControls.addView(receivedOnly);
         catalogRoot.addView(catalogControls);
-        ScrollView catalogScroll=new ScrollView(this);catalogData=new TextView(this);catalogData.setTextIsSelectable(true);catalogData.setTextSize(14);catalogScroll.addView(catalogData);catalogRoot.addView(catalogScroll,new LinearLayout.LayoutParams(-1,0,1));
+        catalogScroll=new ScrollView(this);catalogScroll.setDescendantFocusability(android.view.ViewGroup.FOCUS_BLOCK_DESCENDANTS);
+        catalogData=new TextView(this);catalogData.setFocusable(false);catalogData.setTextIsSelectable(false);catalogData.setTextSize(14);catalogScroll.addView(catalogData);catalogRoot.addView(catalogScroll,new LinearLayout.LayoutParams(-1,0,1));
         catalogScreen=catalogRoot;
         setContentView(mainScreen);
     }
@@ -174,7 +176,7 @@ public final class MainActivity extends Activity implements SyuCanClient.Listene
 
     private void showCatalog() {
         catalogVisible=true;
-        catalogData.setText(renderCatalog());
+        refreshCatalogText(false);
         setContentView(catalogScreen);
     }
     private void showMain() {
@@ -194,37 +196,35 @@ public final class MainActivity extends Activity implements SyuCanClient.Listene
         out.append("Recebidos: ").append(values.size()).append(" sinais decodificados\n\n");
         List<SignalDefinition> definitions=new java.util.ArrayList<>();
         definitions.addAll(VehicleDecoder.catalog());definitions.addAll(PsaPhysicalCanExperimental.catalog());
-        Set<String> defined=new HashSet<>();String category="";long now=System.currentTimeMillis();
+        Set<String> defined=new HashSet<>();String category="";
         for(SignalDefinition definition:definitions) {
             defined.add(definition.name);VehicleSignal value=values.get(definition.name);
             if(only&&value==null)continue;
             if(!category.equals(definition.category)) {category=definition.category;out.append("\n== ").append(category.toUpperCase()).append(" ==\n");}
-            appendCatalogRow(out,definition,value,now);
+            appendCatalogRow(out,definition,value);
         }
         for(VehicleSignal value:values.values())if(!defined.contains(value.name)) {
             if(!category.equals("Campos brutos recebidos")){category="Campos brutos recebidos";out.append("\n== CAMPOS BRUTOS RECEBIDOS ==\n");}
             SignalDefinition definition=new SignalDefinition(category,value.name,value.unit,value.source,value.note,"perfil ativo",value.confidence,true);
-            appendCatalogRow(out,definition,value,now);
+            appendCatalogRow(out,definition,value);
         }
         return out.toString();
     }
-    private static void appendCatalogRow(StringBuilder out,SignalDefinition definition,VehicleSignal value,long now) {
-        out.append(value==null?"○ ":value.available()?"● ":"△ ").append(definition.name).append(" = ");
-        if(value==null)out.append(definition.observableByBinderProbe?"não recebido":"indisponível neste Probe Binder");
-        else if(value.value==null)out.append("indisponível (raw ").append(value.raw).append(')');
-        else out.append(value.value).append(value.unit.isEmpty()?"":" "+value.unit).append(" (raw ").append(value.raw).append(')');
-        out.append("\n  ").append(confidenceLabel(definition.confidence)).append(" | ").append(definition.source).append(" | ").append(definition.scope);
-        if(value!=null)out.append(" | recebido há ").append(Math.max(0,now-value.receivedAtMs)).append(" ms");
-        out.append("\n  ").append(definition.note).append("\n");
+    private void refreshCatalogText(boolean preserveScroll) {
+        if(catalogData==null||catalogScroll==null)return;
+        final int scrollY=preserveScroll?catalogScroll.getScrollY():0;
+        String text=renderCatalog();
+        if(text.contentEquals(catalogData.getText()))return;
+        catalogData.setText(text);
+        if(preserveScroll)catalogScroll.post(() -> catalogScroll.scrollTo(0,scrollY));
+        else catalogScroll.scrollTo(0,0);
     }
-    private static String confidenceLabel(VehicleSignal.Confidence confidence) {
-        switch(confidence) {
-            case OWNER_CONFIRMED:return "CONFIRMADO PELO PROPRIETÁRIO";
-            case OEM_STATIC:return "CÓDIGO OEM";
-            case ESTIMATED:return "ESTIMATIVA";
-            case EXTERNAL_UNVERIFIED:return "FONTE EXTERNA NÃO VALIDADA";
-            default:return "BRUTO DESCONHECIDO";
-        }
+    private static void appendCatalogRow(StringBuilder out,SignalDefinition definition,VehicleSignal value) {
+        out.append(definition.name).append(": ");
+        if(value==null)out.append(definition.observableByBinderProbe?"não recebido":"indisponível neste Probe Binder");
+        else if(value.value==null)out.append("indisponível");
+        else out.append(value.value).append(value.unit.isEmpty()?"":" "+value.unit);
+        out.append('\n');
     }
     private void write(String line) throws Exception {
         byte[] buffer=(line+"\n").getBytes(StandardCharsets.UTF_8);

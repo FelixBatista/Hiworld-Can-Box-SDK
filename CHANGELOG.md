@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.2 — catálogo compacto e rolagem estável
+- Cada sinal do catálogo ocupa uma linha com nome e valor; confiança, fonte, escopo, nota e idade permanecem no SDK/JSONL, mas não poluem a tela de teste.
+- Atualizações preservam a posição vertical do `ScrollView`. Quando nenhum valor mudou, o texto nem sequer é substituído.
+- A interface continua distinguindo zero, indisponível e não recebido; o decoder, os graus de confiança e os mapeamentos não foram alterados.
+
 ## 0.5.1 — catálogo ao vivo no Probe
 - Probe integrado a `VehicleDecoder`: a captura passa a registrar a lista `decodedSignals` com valor, raw, unidade, fonte, confiança, nota e horário.
 - Nova tela de catálogo completo, atualizada durante a leitura, distinguindo zero, indisponível recebido, nunca recebido e valor histórico após desconexão.

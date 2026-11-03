@@ -16,13 +16,13 @@ for (VehicleSignal s : decoder.acceptBinder(e.module, e.code, e.ints, e.timeMs))
 // Recrie ou reset o decoder ao reconectar.
 ```
 
-Core0.5.1 reúne parser, catálogo e decodificação nesta API, mantendo transporte separado. Probe0.5.1 usa o mesmo `VehicleDecoder` e oferece uma tela de catálogo ao vivo. Os exemplos de baixo nível abaixo continuam disponíveis.
+Core0.5.1 reúne parser, catálogo e decodificação nesta API, mantendo transporte separado. Probe0.5.2 usa o mesmo `VehicleDecoder` e oferece uma tela compacta de catálogo ao vivo cuja rolagem não volta ao topo durante atualizações. Os exemplos de baixo nível abaixo continuam disponíveis.
 
 ## Estrutura e decisão
 
 - `core/`: Java8 sem Android, enquadramento5AA5/AA55, checksum e decodificadores. Pode ser testado no laptop.
 - `android/`: transporte Binder `SyuCanClient`, para reutilização em apps Android ou módulo Android de um app Flutter.
-- `probe/`: app diagnóstico0.5.1, usado para captura/exportação e inspeção do catálogo completo durante a leitura.
+- `probe/`: app diagnóstico0.5.2, usado para captura/exportação e inspeção compacta do catálogo completo durante a leitura.
 - `tools/`: análise de JSONL e testes; `tests/`: regressões dos decodificadores.
 - `docs/`: evidências, decisão arquitetural, estado e próximos passos.
 
@@ -63,6 +63,6 @@ JDK9+ (gera bytecodeJava8) ePython3, sem pacotesPython extras:
 python tools/check.py
 ```
 
-Gera `dist/teyes-can-core-0.5.1.jar`. Testa separação de callbacks, perfis, temperaturas, fragmentação em todos os pontos, concatenação, checksum inválido, sentinela inicial, direção negativa e completude básica do catálogo. O pacote completo do Probe pode ser reconstruído no Linux comJDK21,ANDROID_SDK_ROOT contendo platform35/build-tools35.0.0: `bash build-android.sh`. O script produz Probe0.5.1; chaves ficam fora do repo em HOME/.local/share/teyes-probe-signing. Use a mesma chave anterior para preservar upgrades de instalações existentes.
+Gera `dist/teyes-can-core-0.5.1.jar`. Testa separação de callbacks, perfis, temperaturas, fragmentação em todos os pontos, concatenação, checksum inválido, sentinela inicial, direção negativa e completude básica do catálogo. O pacote completo do Probe pode ser reconstruído no Linux comJDK21,ANDROID_SDK_ROOT contendo platform35/build-tools35.0.0: `bash build-android.sh`. O script produz Probe0.5.2; chaves ficam fora do repo em HOME/.local/share/teyes-probe-signing. Use a mesma chave anterior para preservar upgrades de instalações existentes.
 
 Capturas completas, APKs OEM, firmware, fontes decompiladas e credenciais não pertencem aoGit. Só um pacote mínimo observado, sem identificação pessoal, integra o teste. Relatórios históricos preservam hipóteses da época; **docs/STATUS.md é o estado atual**, incluindo validação posterior do usuário. Repo privado; nenhuma licença de redistribuição do material OEM é concedida.
