@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased — automated GitHub releases
+- Every push to `main` now tests and packages a versioned SDK JAR and Probe APK, then publishes both artifacts and a checksum file in a GitHub Release.
+- Build version names and Android version codes are unique per GitHub Actions run. The workflow requires the existing Probe signing key as repository Actions secrets so release APKs remain upgrade-compatible.
+
 ## 0.5.2 — catálogo compacto e rolagem estável
 - Cada sinal do catálogo ocupa uma linha com nome e valor; confiança, fonte, escopo, nota e idade permanecem no SDK/JSONL, mas não poluem a tela de teste.
 - Atualizações preservam a posição vertical do `ScrollView`. Quando nenhum valor mudou, o texto nem sequer é substituído.

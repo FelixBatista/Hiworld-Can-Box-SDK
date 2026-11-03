@@ -2,6 +2,8 @@
 
 **Estado atual:** Core0.5.1/Probe0.5.2. VehicleDecoder expõe velocidadeESTIMATED(raw/10), HVAC/portas/consumo e camposrawdesconhecidos. VehicleSignal carrega unidade/origem/timestamp/confiança. O catálogo do Probe mostra apenas nome e valor em uma linha e preserva a posição de rolagem durante atualizações; os metadados completos continuam no SDK e no JSONL. Sinais nunca recebidos, indisponíveis e zeros permanecem distintos. Decoder experimental separado inclui51camposCANfísicoAEE2010/0x128, incluindo faróis; eles aparecem no catálogo como indisponíveis porque não estão conectados ao transporteBinder. Ver SIGNAL-CATALOG.md e ONLINE-SOURCES.md.
 
+Atualização03/11: workflow `Release SDK and Probe` prepara JAR e APK para cada commit emmain e publica uma GitHub Release com tag única. Exige os secrets `HIWORLD_PROBE_SIGNING_P12_BASE64` e `HIWORLD_PROBE_SIGNING_PASSWORD`, que devem conter a chave já usada pelo Probe instalado; detalhes em [RELEASES.md](RELEASES.md). Sem esses secrets, o workflow falha antes de publicar.
+
 Atualização02/11: captura urbana analisada em [DRIVE-20261102.md](DRIVE-20261102.md). RPM1216–1704, direção raw−18..16. Novo candidato à velocidade: tipo0x1A bytes7/8BE, raw541–760, zero nos ensaios anteriores. Sem escala validada; ainda fora da API de velocidade. Replay agora usa diretamente o parserJava. Nove falhas de checksum observadas, não confundidas com perda de fila do app.
 
 ## Decisão

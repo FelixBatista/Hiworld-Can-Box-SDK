@@ -63,12 +63,16 @@ Requirements: JDK 9 or newer (emitting Java 8 bytecode) and Python 3, with no ad
 python tools/check.py
 ```
 
-This generates `dist/teyes-can-core-0.5.1.jar`. The checks cover callback separation, profiles, temperatures, fragmentation at every point, concatenation, invalid checksums, initial sentinels, negative steering values, and basic catalog completeness. The complete Probe package can be rebuilt on Linux with JDK 21 and an `ANDROID_SDK_ROOT` containing platform 35 and build-tools 35.0.0:
+This generates `dist/hiworld-can-box-sdk-0.5.1.jar`. The checks cover callback separation, profiles, temperatures, fragmentation at every point, concatenation, invalid checksums, initial sentinels, negative steering values, and basic catalog completeness. The complete Probe package can be rebuilt on Linux with JDK 21 and an `ANDROID_SDK_ROOT` containing platform 35 and build-tools 35.0.0:
 
 ```text
 bash build-android.sh
 ```
 
 The script produces Probe 0.5.2. Signing keys remain outside the repository in `HOME/.local/share/teyes-probe-signing`; use the same key to preserve upgrades of existing installations.
+
+## Continuous releases
+
+Every push to `main` builds a versioned SDK JAR and signed Probe APK, then attaches both to a GitHub Release. The one-time signing-key setup is described in [Automated releases](docs/RELEASES.md).
 
 Full captures, OEM APKs, firmware, decompiled sources, and credentials do not belong in Git. Only a minimal, non-identifying observed fixture is included in the tests. Historical reports preserve the hypotheses recorded at the time; **`docs/STATUS.md` is the current state**, including later owner validation. The repository is private, and this project does not grant permission to redistribute OEM material.

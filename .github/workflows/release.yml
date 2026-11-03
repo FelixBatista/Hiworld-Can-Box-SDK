@@ -1,0 +1,101 @@
+name: Release SDK and Probe
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-main
+  cancel-in-progress: false
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK components
+        run: sdkmanager --install "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Define immutable build version
+        id: version
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          core_base=$(sed -n "s/^DEFAULT_CORE_VERSION='\([^']*\)'/\1/p" tools/check.py)
+          probe_base=$(sed -n 's/.*android:versionName="\([^"]*\)".*/\1/p' probe/AndroidManifest.xml)
+          test -n "$core_base"
+          test -n "$probe_base"
+          echo "core_version=${core_base}-build.${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+          echo "probe_version=${probe_base}-build.${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+          echo "probe_version_code=$((100000 + GITHUB_RUN_NUMBER))" >> "$GITHUB_OUTPUT"
+          echo "tag=build-${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+
+      - name: Test and build SDK JAR
+        env:
+          CORE_VERSION: ${{ steps.version.outputs.core_version }}
+        run: python tools/check.py
+
+      - name: Restore the Probe signing key
+        shell: bash
+        env:
+          SIGNING_P12_BASE64: ${{ secrets.HIWORLD_PROBE_SIGNING_P12_BASE64 }}
+          SIGNING_PASSWORD: ${{ secrets.HIWORLD_PROBE_SIGNING_PASSWORD }}
+        run: |
+          set -Eeuo pipefail
+          if [[ -z "$SIGNING_P12_BASE64" || -z "$SIGNING_PASSWORD" ]]; then
+            echo "Missing HIWORLD_PROBE_SIGNING_P12_BASE64 or HIWORLD_PROBE_SIGNING_PASSWORD GitHub secret." >&2
+            exit 1
+          fi
+          signing="$RUNNER_TEMP/hiworld-probe-signing"
+          install -d -m 700 "$signing"
+          printf '%s' "$SIGNING_P12_BASE64" | base64 --decode > "$signing/debug.p12"
+          printf '%s' "$SIGNING_PASSWORD" > "$signing/password"
+          chmod 600 "$signing/debug.p12" "$signing/password"
+          echo "PROBE_SIGNING_DIR=$signing" >> "$GITHUB_ENV"
+
+      - name: Build signed Probe APK
+        env:
+          PROBE_VERSION_NAME: ${{ steps.version.outputs.probe_version }}
+          PROBE_VERSION_CODE: ${{ steps.version.outputs.probe_version_code }}
+        run: |
+          export ANDROID_SDK_ROOT="${ANDROID_HOME:?ANDROID_HOME was not set by setup-android}"
+          bash build-android.sh
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: hiworld-can-box-${{ steps.version.outputs.tag }}
+          if-no-files-found: error
+          path: |
+            dist/hiworld-can-box-sdk-${{ steps.version.outputs.core_version }}.jar
+            dist/hiworld-can-box-probe-${{ steps.version.outputs.probe_version }}.apk
+            dist/SHA256SUMS
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          target_commitish: ${{ github.sha }}
+          name: SDK ${{ steps.version.outputs.core_version }} / Probe ${{ steps.version.outputs.probe_version }}
+          generate_release_notes: true
+          files: |
+            dist/hiworld-can-box-sdk-${{ steps.version.outputs.core_version }}.jar
+            dist/hiworld-can-box-probe-${{ steps.version.outputs.probe_version }}.apk
+            dist/SHA256SUMS
