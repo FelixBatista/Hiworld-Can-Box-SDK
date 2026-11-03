@@ -1,56 +1,57 @@
-# Investigação do firmware CC2 PLUS-EN 2025.12.2
+# CC2 PLUS-EN 2025.12.2 firmware investigation
 
-## Identidade, execução e cobertura
+## Identity, execution, and coverage
 
-ZIP fornecido, SHA2564a7a8b91fcecf95128a9295a2c8b96d6d0c991accc4519177cd90a6bb2543254, igual à cópia já armazenada no servidor. Originais preservados.
-AllAppUpdate.bin é ZIP com membros criptografados. Credencial embutida no atualizador foi validada contra um membro do pacote sem executar o atualizador; credencial não incluída nesta entrega. Extração seletiva por nome fixo. 6315_1.zip inventariado (system/product/vendor/socko, boot e componentes de rádio); imagens de partição não foram expandidas nem montadas.
-Análise offline no container existente, sem rede,2CPU/8GiB, nenhum APK OEM executado, nenhum comando enviado ao veículo. Extração/decompilação por Python/unzip/JADX CLI, não é Evidence produzido pelo REA. Não houve alteração de stack, serviço de produção ou configuração da central.
+The supplied ZIP has SHA-256 `4a7a8b91fcecf95128a9295a2c8b96d6d0c991accc4519177cd90a6bb2543254`, matching the copy already stored on the server. Originals were preserved.
+`AllAppUpdate.bin` is a ZIP containing encrypted members. An updater-embedded credential was validated against a package member without running the updater; the credential is not included here. Extraction was selective and used fixed names. `6315_1.zip` was inventoried (system/product/vendor/socko, boot, and radio components); partition images were neither expanded nor mounted.
 
-MS extraído:25.1202/2125120210, exatamente a versão informada nos logs; correspondência por versão não é comprovação de hash do APK instalado. SHA25694a96a51a56367e18817fe66e76a84424116cb97861bf553c1938fcde2c4d969.
-Canbus:versionCode2125112518. cc2plus.apk é ru.teyes.update (atualizador), não launcher.
-Decompilados MS,Canbus,US,CarUI,cc2plus,com.syu.launcher,Launcher3 e launchers4/6/8. MS terminou com31 erros eUS com2; CarUI/Launcher3 também retornaram3, logs retidos. Exit0 dos launchers protegidos não significa recuperação de sua lógica.
+Offline analysis ran in the existing container, without network access, with 2 CPUs/8 GiB. No OEM APK was executed and no command was sent to the vehicle. Python, unzip, and JADX CLI performed extraction/decompilation; this is not evidence produced by REA. No production stack, service, or head-unit configuration changed.
 
-Raiz servidor: /srv/development/firmware-lab/workspace/teyes-508-research/firmware-dec. Caminhos abaixo relativos a decompiled/.
+Extracted MS: 25.1202/2125120210, exactly the version reported in the logs; matching the version is not proof of the installed APK hash. SHA-256: `94a96a51a56367e18817fe66e76a84424116cb97861bf553c1938fcde2c4d969`.
+Canbus: versionCode 2125112518. `cc2plus.apk` is `ru.teyes.update` (the updater), not a launcher.
+MS, Canbus, US, CarUI, cc2plus, com.syu.launcher, Launcher3, and launchers 4/6/8 were decompiled. MS ended with 31 errors and US with 2; CarUI/Launcher3 also reported 3, and logs were retained. Exit 0 from protected launchers does not mean their logic was recovered.
 
-## Mapa de funcionalidades
+Server root: `/srv/development/firmware-lab/workspace/teyes-508-research/firmware-dec`. Paths below are relative to `decompiled/`.
 
-| Funcionalidade | Fonte confirmada | Resultado |
+## Feature map
+
+| Feature | Confirmed source | Result |
 |---|---|---|
-| Overlay HVAC PSA252 | CAN7 códigos10–96 | Caminho de UI e parser confirmados |
-| Portas/capô/porta-malas | CAN7 códigos0–5 | Callback252 configura DoorHelper |
-| Consumo/trips | CAN7 códigos98–106,172 | Páginas PSA confirmadas; não confundir com velocidade atual |
-| Velocidade GPS | Main0/101 | Publicação confirmada no MS dezembro |
-| Velocidade CAN | CAN7/1031 | Não encontrada publicação no caminho252 inspecionado; nenhum callback nos testes |
-| RPM/direção brutos | Mensagem5AA5 tipo0x1A | Candidatos de captura; unidades ainda não corroboradas por decoder OEM |
-| Iluminação | Main0/4 | Estado geral observado; não distingue farol alto |
-| Farol alto | Indefinido | Sem decoder específico confirmado |
-| Velocímetro launcher4/6/8 | Lógica protegida | OrigemGPS/CAN ainda não estabelecida |
+| PSA-252 HVAC overlay | CAN 7 codes 10–96 | UI and parser path confirmed |
+| Doors / hood / trunk | CAN 7 codes 0–5 | Callback 252 configures `DoorHelper` |
+| Consumption / trips | CAN 7 codes 98–106, 172 | PSA pages confirmed; do not confuse them with current speed |
+| GPS speed | Main 0/101 | Publication confirmed in December MS |
+| CAN speed | CAN 7/1031 | No publication found in the inspected 252 path; no callback in tests |
+| Raw RPM / steering | `5AA5` type `0x1A` | Capture candidates; units are not corroborated by an OEM decoder |
+| Illumination | Main 0/4 | General state observed; does not distinguish high beam |
+| High beam | Undefined | No specific decoder confirmed |
+| Launcher 4/6/8 speedometer | Protected logic | GPS/CAN source not established |
 
-## Overlay ar-condicionado — confirmado dezembro
+## Air-conditioning overlay — confirmed in December
 
-com.syu.canbus/sources/com/syu/module/canbus/Callback_0252_WC2_PSAALL.java:185–198 configura DoorHelper0–5, cria Air_0252_WC2_PSAALL e registra AirHelper.SHOW_AND_REFRESH em10–96. out():202+ remove os callbacks.
-com.syu.canbus/sources/com/syu/ui/air/Air_0252_WC2_PSAALL.java:37–77 lê13/55/11/53/12/65/16/18/19/20/51/21;95AQS54;99–118temperaturas27/28 eoffset242. Temperatura=(raw+offset*10)/10;−1NO,−2LOW,−3HI. O overlay trabalha com os mesmos dados Binder disponíveis ao cliente independente.
-com.syu.ms/sources/j0/h8.java:795–815 recebe tipo0x31. Primeiro byte:power10=bit6;53=bit5;42=bit4;auto13=bit3;dual55=bit2;AC11=bit0. Segundo:recirculação12=bit4,AQS54=bit3. Terceiro:desembaçador traseiro16=bit5,dianteiro65=bit4. Modos de distribuição18/19/20 e22/23/24 são calculados; ventilador21 em900,temperaturas27/28em905+. Não assumir todos os bits suportados pelo carro.
+`com.syu.canbus/sources/com/syu/module/canbus/Callback_0252_WC2_PSAALL.java:185–198` configures `DoorHelper` 0–5, creates `Air_0252_WC2_PSAALL`, and registers `AirHelper.SHOW_AND_REFRESH` for 10–96. `out()` at 202+ removes callbacks.
+`com.syu.canbus/sources/com/syu/ui/air/Air_0252_WC2_PSAALL.java:37–77` reads 13/55/11/53/12/65/16/18/19/20/51/21; 95 reads AQS 54; 99–118 read temperatures 27/28 and offset 242. Temperature is `(raw+offset*10)/10`; −1 is NO, −2 is LOW, and −3 is HI. The overlay uses the same Binder data available to an independent client.
+`com.syu.ms/sources/j0/h8.java:795–815` receives type `0x31`. First byte: power 10=bit6; 53=bit5; 42=bit4; auto 13=bit3; dual 55=bit2; AC 11=bit0. Second: recirculation 12=bit4, AQS 54=bit3. Third: rear defrost 16=bit5, front defrost 65=bit4. Distribution modes 18/19/20 and 22/23/24 are calculated; fan 21 is at 900 and temperatures 27/28 at 905+. Do not assume every bit is supported by the vehicle.
 
-## Vehicle Info / informações PSA
+## Vehicle Info / PSA information
 
-PSAOilMilePage1Acti.java:42–44 registra98/99/172;56+ consumo decimal em98 com unidade172 (2km/l,3mpg,demaisL/100KM);78+distância99. Page2:65+consumo100,84+campo102 exibidoKM,98+distância101. Page3 usa103/105/106. Representações OEM, não rótulos inferidos dos nomes antigos de constantes. MS h8:1295–1313 popula98–106 nos tipos0x13/0x14/0x15.
-PSAFuncLightActi trata configurações enviadas com cmd14/16/17/26. Sua existência não confirma estado atual do farol alto. Busca textual delimitada aos consumidores PSA por high-beam/远光 não encontrou caminho explícito.
+`PSAOilMilePage1Acti.java:42–44` registers 98/99/172; 56+ renders decimal consumption from 98 with unit 172 (2 km/l, 3 mpg, otherwise L/100 km); 78+ renders distance 99. Page 2: 65+ consumption 100, 84+ field 102 displayed as KM, 98+ distance 101. Page 3 uses 103/105/106. These are OEM representations, not labels inferred from legacy constant names. MS `h8:1295–1313` populates 98–106 for types `0x13`/`0x14`/`0x15`.
+`PSAFuncLightActi` handles settings sent by commands 14/16/17/26. Its existence does not confirm the current high-beam state. A text search limited to PSA consumers for high-beam/远光 found no explicit path.
 
-## GPS e launcher
+## GPS and launcher
 
-com.syu.ms/sources/n1/i.java:346–348 usa Location.getSpeed()*3.6 ->t0.d.u0. t0/d.java:3958–3962 armazena W1 e publica Main101. Isso éGPS, não velocidade CAN.
-com.syu.launcher é seletor de launchers: MainActivity.java:58–66 identifica4/6/8;162+altera persist.launcher.packagename. Não é o consumidor do velocímetro.
-Launchers4/6/8 resultam em R.java,kdp/AR e com/kiwivm/security/StubApplication. No4,StubApplication:128–133 carrega biblioteca nativa;167/170 attachBaseContext/onCreate nativos. Recurso car_speed existe, porém seu código consumidor não aparece no DEX recuperado. Não afirmar velocidadeGPS apenas por encontrar o publicador. Desbloquear esta trilha exige aprofundar carregador nativo/proteção ou observar o launcher efetivamente instalado em execução. Nenhum acessoADB/runtime à central foi estabelecido nesta sessão.
+`com.syu.ms/sources/n1/i.java:346–348` uses `Location.getSpeed()*3.6 -> t0.d.u0`. `t0/d.java:3958–3962` stores W1 and publishes Main 101. That is GPS, not CAN speed.
+`com.syu.launcher` is a launcher selector: `MainActivity.java:58–66` identifies 4/6/8; 162+ changes `persist.launcher.packagename`. It is not the speedometer consumer.
+Launchers 4/6/8 yield `R.java`, kdp/AR, and `com/kiwivm/security/StubApplication`. In launcher 4, `StubApplication:128–133` loads a native library and 167/170 call native `attachBaseContext`/`onCreate`. A `car_speed` resource exists, but its consumer does not occur in the recovered DEX. Do not claim GPS speed merely by finding its publisher. Following this path requires deeper analysis of the native loader/protection or observation of the actually installed launcher at runtime. No ADB/runtime access to the head unit was established in this session.
 
-## Mensagens brutas e limitações
+## Raw messages and limitations
 
-MS j0/ht.java:2228–2229 seleciona h8 para252. h8.V2:707 não trata tipo26 nem publica1031/1032 literalmente; ct.V2:60 é vazio. z/i.java:792–804 passa MCU0xE3 ao parser e pode copiar1019;809–824MCU0x10 copia1019 sem chamar h8. Callback1019 não carrega identificação explícita da rota externa.
-k0/o.java:j:523+ trata fluxo5AA5/AA55, tamanho byte2+5, checksum(sum bytes2 até penúltimo−1)&255 em545–550/585–594. Tipo0xF0 extrai identificaçãoASCII e publica1051 em554–555/599–600. Corrobora o enquadramento inferido nas capturas; não fornece semântica de RPM/direção.
-As capturas existentes têm candidatoRPM bytes13/14 big-endian857–2897 e819–4955, candidato direção signed16bytes10/11 −226..220 no segundo teste. Não promover candidatos a medidas calibradas. Não concluir que a troca de perfil habilitou esses sinais: tipo0x1A já existe em ambos.
+MS `j0/ht.java:2228–2229` selects h8 for 252. `h8.V2:707` neither handles type 26 nor literally publishes 1031/1032; `ct.V2:60` is empty. `z/i.java:792–804` passes MCU `0xE3` to the parser and may copy 1019; 809–824 copies 1019 for MCU `0x10` without calling h8. Callback 1019 has no explicit external-route identity.
+`k0/o.java:j:523+` handles the `5AA5`/`AA55` flow, length `byte2+5`, and checksum `(sum bytes 2 through penultimate − 1)&255` at 545–550/585–594. Type `0xF0` extracts an ASCII identifier and publishes 1051 at 554–555/599–600. It corroborates framing inferred from captures but provides no RPM/steering semantics.
+The existing captures had an RPM candidate in bytes 13/14 big-endian (857–2897 and 819–4955) and a signed steering candidate in bytes 10/11 (−226..220 in the second test). Do not promote candidates to calibrated measures. Do not conclude that changing profile enabled them: type `0x1A` already exists in both.
 
-## Próximo trabalho fundamentado
+## Grounded next work
 
-Reaproveitar campos HVAC/portas/trips comprovados; adicionarGPS como fonte explicitamenteGPS, não substituto silencioso deCAN. Implementar reconstrução de fluxo5AA5 com validação antes de decodificar0x1A. Manter farol alto/velocidadeCAN e unidades de direção/RPM como lacunas. Investigar carregador nativo dos launchers para determinar consumidor do velocímetro. Nenhuma nova versão do Probe foi feita neste passo.
+Reuse proven HVAC/door/trip fields; add GPS explicitly as GPS rather than silently substituting it for CAN. Implement `5AA5` stream reconstruction with validation before decoding `0x1A`. Keep high beam, CAN speed, and steering/RPM units as gaps. Investigate the launchers' native loader to determine the speedometer consumer. No new Probe version was made at this step.
 
-Rollback: análise apenas cria firmware-dec e scripts de investigação; não há alteração operacional para reverter. Arquivos grandes permanecem no workspace limitado do laboratório, não em volumes de produção. Não apagar capturas nem aplicativos anteriores.
+Rollback: the analysis only creates `firmware-dec` and investigation scripts; there is no operational change to revert. Large files remain in the lab's restricted workspace, not production volumes. Do not delete captures or previous applications.

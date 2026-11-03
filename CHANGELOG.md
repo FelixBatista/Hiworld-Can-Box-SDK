@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased — English documentation
+- Translated every Markdown document under `docs/` to English while retaining technical evidence, uncertainty, scopes, offsets, units, sentinels, and source links.
+
 ## Unreleased — automated GitHub releases
 - Every push to `main` now tests and packages a versioned SDK JAR and Probe APK, then publishes both artifacts and a checksum file in a GitHub Release.
 - Build version names and Android version codes are unique per GitHub Actions run. The workflow requires the existing Probe signing key as repository Actions secrets so release APKs remain upgrade-compatible.
