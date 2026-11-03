@@ -1,6 +1,6 @@
-# Teyes CAN SDK — Peugeot 508
+# HiWorld CAN Box SDK — Peugeot 508
 
-Library for building applications that read vehicle data through Teyes/SYU services. The project focuses on the **SDK and decoding layer**, rather than a launcher. Reference vehicle: Peugeot 508 SW 2014, without an amplifier; firmware MS25.1202/2125120210.
+Library for building applications that read data from HiWorld CAN Boxes through the Teyes/SYU services exposed by the head unit. The project focuses on the **SDK and decoding layer**, rather than a launcher. Reference vehicle: Peugeot 508 SW 2014, without an amplifier; firmware MS25.1202/2125120210.
 
 ## Extended API 0.5.1
 
