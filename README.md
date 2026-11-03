@@ -1,68 +1,74 @@
 # Teyes CAN SDK — Peugeot 508
 
-Biblioteca para criar aplicativos que leem dados do carro através dos serviços Teyes/SYU. Projeto principal: **SDK e decodificação**, não launcher. Veículo de referência: Peugeot508SW2014, sem amplificador; firmware MS25.1202/2125120210.
+Library for building applications that read vehicle data through Teyes/SYU services. The project focuses on the **SDK and decoding layer**, rather than a launcher. Reference vehicle: Peugeot 508 SW 2014, without an amplifier; firmware MS25.1202/2125120210.
 
-## API ampliada 0.5.1
+## Extended API 0.5.1
 
-Use `VehicleDecoder`: ele expõe candidatos com `confidence`, `source`, `unit`, `receivedAtMs` e `note`. Consulte o [catálogo completo](docs/SIGNAL-CATALOG.md) e as [fontes online](docs/ONLINE-SOURCES.md). `speed_kmh_estimated` usa raw/10 como hipótese: **não é velocidade calibrada**. Farol alto/baixo estão no decoder separado de CAN físico experimental, ainda inacessíveis pela conexão Teyes.
+Use `VehicleDecoder`: it exposes candidates with `confidence`, `source`, `unit`, `receivedAtMs`, and `note`. See the [complete catalog](docs/SIGNAL-CATALOG.md) and the [online sources](docs/ONLINE-SOURCES.md). `speed_kmh_estimated` uses raw/10 as a hypothesis and is **not calibrated speed**. High and low beam fields belong to the separate experimental physical-CAN decoder and are not currently accessible through the Teyes connection.
 
 ```java
 final VehicleDecoder decoder = new VehicleDecoder();
-// Dentro de SyuCanClient.Listener.onEvent:
+// Inside SyuCanClient.Listener.onEvent:
 for (VehicleSignal s : decoder.acceptBinder(e.module, e.code, e.ints, e.timeMs)) {
-    // s.value pode ser null. Preserve confidence/source e rotule as estimativas.
-    // s.isStale(nowMs, 2000) usa limite de validade escolhido pelo app.
+    // s.value may be null. Preserve confidence/source and label estimates in the UI.
+    // s.isStale(nowMs, 2000) uses the expiration limit chosen by the app.
 }
-// Recrie ou reset o decoder ao reconectar.
+// Create or reset the decoder when reconnecting.
 ```
 
-Core0.5.1 reúne parser, catálogo e decodificação nesta API, mantendo transporte separado. Probe0.5.2 usa o mesmo `VehicleDecoder` e oferece uma tela compacta de catálogo ao vivo cuja rolagem não volta ao topo durante atualizações. Os exemplos de baixo nível abaixo continuam disponíveis.
+Core 0.5.1 combines framing, the catalog, and decoding while keeping transport separate. Probe 0.5.2 uses the same `VehicleDecoder` and provides a compact live catalog screen whose scroll position stays stable during updates. The lower-level examples below remain available.
 
-## Estrutura e decisão
+## Structure and design
 
-- `core/`: Java8 sem Android, enquadramento5AA5/AA55, checksum e decodificadores. Pode ser testado no laptop.
-- `android/`: transporte Binder `SyuCanClient`, para reutilização em apps Android ou módulo Android de um app Flutter.
-- `probe/`: app diagnóstico0.5.2, usado para captura/exportação e inspeção compacta do catálogo completo durante a leitura.
-- `tools/`: análise de JSONL e testes; `tests/`: regressões dos decodificadores.
-- `docs/`: evidências, decisão arquitetural, estado e próximos passos.
+- `core/`: Android-free Java 8 framing for 5AA5/AA55, checksum handling, and decoders. It can be tested on a laptop.
+- `android/`: Binder transport through `SyuCanClient`, reusable in Android applications or an Android module for a Flutter app.
+- `probe/`: diagnostic app 0.5.2 for capture, export, and compact live catalog inspection.
+- `tools/`: JSONL analysis and test tools; `tests/`: decoder regression tests.
+- `docs/`: evidence, architecture decisions, current status, and next steps.
 
-**Integração atual:** incluir as fontes de `core/src` e `android/src` no módulo Android consumidor. Alternativamente compile o JAR core e use-o junto de SyuCanClient.java. Não é preciso executar o Probe junto do seu app. Ainda não há publicação Maven/AAR, serviço central ou API de comandos.
+**Current integration:** include the sources from `core/src` and `android/src` in the consuming Android module. Alternatively, compile the core JAR and use it together with `SyuCanClient.java`. The Probe does not need to run alongside your application. Maven/AAR publication, a central service, and a command API are not available yet.
 
 ```java
 final CanboxStream stream = new CanboxStream();
 final SyuCanClient reader = new SyuCanClient(context, new SyuCanClient.Listener() {
-    public void onStatus(String message) { /* registrar e mostrar desconexões */ }
+    public void onStatus(String message) { /* record and display disconnects */ }
     public void onEvent(SyuCanClient.Event e) {
         if (e.module == 7 && e.code == 1019 && e.profile != null) {
             for (byte[] packet : stream.feed(e.ints)) {
                 PsaTelemetry sample = PsaTelemetry.decode(e.profile, packet);
                 if (sample != null) {
-                    // sample.rpm: RPM confirmado pelo proprietário.
-                    // sample.steeringRaw: direção confirmada; NÃO são graus calibrados.
-                    // Use e.timeMs/e.elapsedNs como horário de recepção do último fragmento.
+                    // sample.rpm: confirmed by the owner.
+                    // sample.steeringRaw: steering movement confirmed; degrees are not calibrated.
+                    // Use e.timeMs/e.elapsedNs as the reception time of the last fragment.
                 }
             }
         }
     }
 }, true);
-reader.connect(); // main thread; close() ao terminar
+reader.connect(); // main thread; call close() when finished
 ```
 
-Inclua `<queries><package android:name="com.syu.ms"/></queries>` no manifest. Não copie sharedUserId OEM. Listener roda em worker; encaminhe UI à main thread. Crie cliente/parser/decoder novos a cada conexão e troque/reset o parser quando o perfil mudar. Não misture streams de dispositivos/conexões. Para Flutter, adapte o listener para EventChannel; esse adaptador ainda não foi implementado.
+Add `<queries><package android:name="com.syu.ms"/></queries>` to the manifest. Do not copy the OEM `sharedUserId`. The listener runs on a worker thread, so dispatch UI work to the main thread. Create a new client/parser/decoder for each connection and reset the parser when the profile changes. Do not mix streams from different devices or connections. For Flutter, adapt the listener through an EventChannel; that adapter is not implemented yet.
 
-## Validação atual
+## Current validation
 
-RPM e movimento da direção foram confirmados pelo proprietário em31/10/2026. O decoder bruto restringe-se aos perfis observados3014908(2010–2018High) e3080444(2019–2024), tipo0x1A. Não generalizar a outros CAN boxes. Origem das amostras e limites constam em docs/STATUS.md.
-Iluminação geral foi observada; velocidadeCAN está exposta como estimativa. Farol alto no fluxoTeyes segue desconhecido. GPSMain0/101 é fonte separada. HVAC/portas/trips estão expostos com graus de confiança e escalas explícitas. Ausência de evento não é valor zero. Apps devem marcar dados antigos/desconexão e mostrar origem/unidade, sem misturar GPS eCAN.
+The owner confirmed RPM and steering movement on 2026-10-31. The raw decoder is restricted to the observed profiles 3014908 (2010–2018 High) and 3080444 (2019–2024), using type 0x1A. Do not generalize these mappings to other CAN boxes. Evidence and limits are documented in `docs/STATUS.md`.
+General illumination changes have been observed; CAN speed is exposed as an estimate. High beam remains unknown in the Teyes data flow. GPS Main 0/101 is a separate source. HVAC, door, and trip fields are exposed with confidence levels and explicit scales. The absence of an event is not the value zero. Applications should mark old or disconnected data and show its source and unit without mixing GPS and CAN speed.
 
-## Construir e testar
+## Build and test
 
-JDK9+ (gera bytecodeJava8) ePython3, sem pacotesPython extras:
+Requirements: JDK 9 or newer (emitting Java 8 bytecode) and Python 3, with no additional Python packages:
 
 ```text
 python tools/check.py
 ```
 
-Gera `dist/teyes-can-core-0.5.1.jar`. Testa separação de callbacks, perfis, temperaturas, fragmentação em todos os pontos, concatenação, checksum inválido, sentinela inicial, direção negativa e completude básica do catálogo. O pacote completo do Probe pode ser reconstruído no Linux comJDK21,ANDROID_SDK_ROOT contendo platform35/build-tools35.0.0: `bash build-android.sh`. O script produz Probe0.5.2; chaves ficam fora do repo em HOME/.local/share/teyes-probe-signing. Use a mesma chave anterior para preservar upgrades de instalações existentes.
+This generates `dist/teyes-can-core-0.5.1.jar`. The checks cover callback separation, profiles, temperatures, fragmentation at every point, concatenation, invalid checksums, initial sentinels, negative steering values, and basic catalog completeness. The complete Probe package can be rebuilt on Linux with JDK 21 and an `ANDROID_SDK_ROOT` containing platform 35 and build-tools 35.0.0:
 
-Capturas completas, APKs OEM, firmware, fontes decompiladas e credenciais não pertencem aoGit. Só um pacote mínimo observado, sem identificação pessoal, integra o teste. Relatórios históricos preservam hipóteses da época; **docs/STATUS.md é o estado atual**, incluindo validação posterior do usuário. Repo privado; nenhuma licença de redistribuição do material OEM é concedida.
+```text
+bash build-android.sh
+```
+
+The script produces Probe 0.5.2. Signing keys remain outside the repository in `HOME/.local/share/teyes-probe-signing`; use the same key to preserve upgrades of existing installations.
+
+Full captures, OEM APKs, firmware, decompiled sources, and credentials do not belong in Git. Only a minimal, non-identifying observed fixture is included in the tests. Historical reports preserve the hypotheses recorded at the time; **`docs/STATUS.md` is the current state**, including later owner validation. The repository is private, and this project does not grant permission to redistribute OEM material.
