@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased — direct transport research
+- Documented the OEM MCU serial initialization, profile 252 parser selection, and remaining unknowns about direct CAN-box access.
+
 ## Unreleased — English documentation
 - Translated every Markdown document under `docs/` to English while retaining technical evidence, uncertainty, scopes, offsets, units, sentinels, and source links.
 

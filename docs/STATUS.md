@@ -1,5 +1,7 @@
 # Status and continuity — updated 2026-11-03
 
+Direct transport investigation on 2026-11-04 traced MCU serial-port selection and profile 252's parser in MS; the physical box-to-MCU connection and independent access remain unverified. See [DIRECT-TRANSPORT-INVESTIGATION.md](DIRECT-TRANSPORT-INVESTIGATION.md).
+
 **Current status:** Core 0.5.1 / Probe 0.5.2. `VehicleDecoder` exposes estimated speed (raw/10), HVAC/doors/consumption, and unknown raw fields. `VehicleSignal` carries unit, source, timestamp, and confidence. The Probe catalog shows only name and value on one line and preserves scroll position during updates; complete metadata remains in the SDK and JSONL. Signals never received, unavailable signals, and zeros remain distinct. A separate experimental decoder includes 51 AEE2010 physical-CAN fields, including lights; they appear as unavailable in the catalog because they are not connected to the Binder transport. See `SIGNAL-CATALOG.md` and `ONLINE-SOURCES.md`.
 
 Update 2026-11-03: the `Release SDK and Probe` workflow prepares a JAR and APK for every commit on `main` and publishes a GitHub Release with a unique tag. It requires the `HIWORLD_PROBE_SIGNING_P12_BASE64` and `HIWORLD_PROBE_SIGNING_PASSWORD` secrets, containing the key already used by the installed Probe; details are in [RELEASES.md](RELEASES.md). Without those secrets, the workflow fails before publishing.
